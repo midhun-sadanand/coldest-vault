@@ -10,6 +10,17 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
+  openGraph: {
+    title: 'Vault',
+    description: 'Search and explore historical document archives',
+    images: ['/favicon.svg'],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Vault',
+    description: 'Search and explore historical document archives',
+    images: ['/favicon.svg'],
+  },
 };
 
 export default function RootLayout({
