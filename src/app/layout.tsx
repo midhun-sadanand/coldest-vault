@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://coldest-vault.vercel.app'),
   title: 'Vault',
   description: 'Search and explore historical document archives',
   icons: {
@@ -13,13 +14,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Vault',
     description: 'Search and explore historical document archives',
-    images: ['/favicon.svg'],
+    images: ['/favicon.png'],
   },
   twitter: {
     card: 'summary',
     title: 'Vault',
     description: 'Search and explore historical document archives',
-    images: ['/favicon.svg'],
+    images: ['/favicon.png'],
   },
 };
 
