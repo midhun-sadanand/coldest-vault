@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'ABC Diatype';
+  src: url('/fonts/abc-diatype-regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABC Diatype';
+  src: url('/fonts/abc-diatype-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family: 'ABC Diatype', system-ui, sans-serif;
+}
+
+/* Design at Yale color scheme - Light mode */
+:root.light {
+  --bg: #ffffff;
+  --bg-secondary: #fafafa;
+  --text: #000000;
+  --text-muted: #6b6b6b;
+  --text-subtle: #888888;
+  --border: #e5e5e5;
+  --border-faint: #ebebeb;
+  --accent: #000000;
+  --accent-hover: #333333;
+  --input-border: #d1d1d1;
+  --input-bg: transparent;
+}
+
+/* Design at Yale color scheme - Dark mode */
+:root.dark {
+  --bg: #000000;
+  --bg-secondary: #0a0a0a;
+  --text: #ffffff;
+  --text-muted: #b0b0b0;
+  --text-subtle: #888888;
+  --border: #2a2a2a;
+  --border-faint: #1a1a1a;
+  --accent: #ffffff;
+  --accent-hover: #e5e5e5;
+  --input-border: #404040;
+  --input-bg: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbar - dark/light aware */
+.light ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+
+/* Faint gray separator lines - Design at Yale style */
+.separator-line {
+  border-top: 1px solid var(--border);
+}
+
+/* Outlined button style */
+.btn-outline {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-outline:hover {
+  background: var(--bg-secondary);
+}
+
+/* Highlight animation */
+@keyframes highlight-fade {
+  from {
+    background-color: rgba(255, 255, 0, 0.3);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.highlight-new {
+  animation: highlight-fade 2s ease-out;
+}
+
+/* Ensure input backgrounds work in dark mode */
+.dark input,
+.dark textarea,
+:root.dark input,
+:root.dark textarea {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.light input,
+.light textarea,
+:root.light input,
+:root.light textarea {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Override browser autofill styling */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+:root.dark input:-webkit-autofill,
+:root.dark input:-webkit-autofill:hover,
+:root.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #000000 inset !important;
+  box-shadow: 0 0 0px 1000px #000000 inset !important;
+}
+
+.light input:-webkit-autofill,
+.light input:-webkit-autofill:hover,
+.light input:-webkit-autofill:focus,
+:root.light input:-webkit-autofill,
+:root.light input:-webkit-autofill:hover,
+:root.light input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+}
