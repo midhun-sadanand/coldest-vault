@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, ChevronDown, FileText, Calendar, ExternalLink, Users, Folder } from 'lucide-react';
@@ -43,7 +43,7 @@ interface ChronologyResponse {
   undatedDocuments: number;
 }
 
-export default function ChronologyPage() {
+function ChronologyContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<ChronologyResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -449,5 +449,24 @@ export default function ChronologyPage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function ChronologyPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="animate-pulse">
+          <div className="h-12 w-48 bg-[var(--border)] mb-8" />
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-[var(--border)]" />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ChronologyContent />
+    </Suspense>
   );
 }

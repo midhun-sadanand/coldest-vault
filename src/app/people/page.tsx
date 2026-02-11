@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, ChevronRight, X, Folder } from 'lucide-react';
 import { cn, getDisplayDate } from '@/lib/utils';
@@ -33,7 +33,7 @@ interface PersonDocumentsResponse {
   count: number;
 }
 
-export default function PeoplePage() {
+function PeopleContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [data, setData] = useState<PeopleResponse | null>(null);
@@ -260,5 +260,24 @@ export default function PeoplePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PeoplePage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="animate-pulse">
+          <div className="h-12 w-48 bg-[var(--border)] mb-8" />
+          <div className="space-y-2">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-12 bg-[var(--border)]" />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <PeopleContent />
+    </Suspense>
   );
 }

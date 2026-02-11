@@ -203,7 +203,7 @@ export default function Home() {
     
     return paragraphs.map((paragraph, pIdx) => {
       // Check if it's a numbered list item
-      const listMatch = paragraph.match(/^(\d+)\.\s*(.+)$/s);
+      const listMatch = paragraph.match(/^(\d+)\.\s*([\s\S]+)$/);
       if (listMatch) {
         return (
           <div key={pIdx} className="flex gap-3 my-3">

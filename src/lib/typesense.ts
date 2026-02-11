@@ -1,9 +1,31 @@
-import Typesense from 'typesense';
+import Typesense, { Client } from 'typesense';
 import type { SearchResult, TypeSenseDocument } from '@/types';
 
-let client: Typesense.Client | null = null;
+// Type for internal candidate processing
+interface SearchCandidate {
+  document: {
+    file_path: string;
+    file_name: string;
+    drive_file_id: string;
+    web_view_link: string;
+    folder_path: string;
+    people: string[];
+    locations: string[];
+    dates: string[];
+    summary: string;
+    ocr_content: string;
+  };
+  rawSimilarity: number;
+  hasFileNameMatch: boolean;
+  hasSummaryMatch: boolean;
+  textMatchCount: number;
+  score: number;
+  highlights: Record<string, string[]>;
+}
 
-export function getTypesenseClient(): Typesense.Client {
+let client: Client | null = null;
+
+export function getTypesenseClient(): Client {
   if (!client) {
     client = new Typesense.Client({
       nodes: [{
@@ -113,14 +135,14 @@ export async function semanticSearch(
     }]
   };
 
-  const response = await client.multiSearch.perform(searchRequests, {});
-  const results = response.results[0];
-  const hits = results.hits || [];
+  const response = await client.multiSearch.perform(searchRequests, {}) as any;
+  const results = response.results?.[0] as any;
+  const hits = results?.hits || [];
   
   if (hits.length === 0) return [];
 
   // Extract raw similarities and map documents
-  const candidates = hits.map((hit: any) => {
+  const candidates: SearchCandidate[] = hits.map((hit: any) => {
     const rawSimilarity = hit.vector_distance !== undefined ? 1 - hit.vector_distance : 0;
     const fileName = hit.document.file_name || '';
     const summary = hit.document.summary || '';
@@ -149,12 +171,12 @@ export async function semanticSearch(
       hasSummaryMatch,
       textMatchCount,
       score: 0, // Will be calculated below
-      highlights: hit.highlights || {}
+      highlights: (hit.highlights || {}) as Record<string, string[]>
     };
   });
 
   // Get similarity values for statistical analysis
-  const similarities = candidates.map(c => c.rawSimilarity);
+  const similarities = candidates.map((c: SearchCandidate) => c.rawSimilarity);
   const avgSimilarity = mean(similarities);
   const stdDev = standardDeviation(similarities);
   const coeffOfVariation = avgSimilarity > 0 ? stdDev / avgSimilarity : 0;
@@ -340,9 +362,9 @@ export async function researchSearch(
     }]
   };
 
-  const response = await client.multiSearch.perform(searchRequests, {});
-  const results = response.results[0];
-  const hits = results.hits || [];
+  const response = await client.multiSearch.perform(searchRequests, {}) as any;
+  const results = response.results?.[0] as any;
+  const hits = results?.hits || [];
 
   // Simply return top results by vector similarity - no strict filtering
   // This ensures research mode always has context to work with

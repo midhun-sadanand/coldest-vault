@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, ChevronDown, FileText, Folder, FolderOpen, ExternalLink, Users, MapPin, Calendar } from 'lucide-react';
@@ -42,7 +42,7 @@ interface TreeNode {
   totalCount: number; // Total docs in this node and all descendants
 }
 
-export default function DirectoryPage() {
+function DirectoryContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<DirectoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -485,5 +485,24 @@ export default function DirectoryPage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function DirectoryPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="animate-pulse">
+          <div className="h-12 w-48 bg-[var(--border)] mb-8" />
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-[var(--border)]" />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <DirectoryContent />
+    </Suspense>
   );
 }
