@@ -548,7 +548,7 @@ export default function Home() {
             {folderResults.map((folder) => (
               <Link
                 key={folder.folder_path}
-                href={`/directory?search=${encodeURIComponent(query)}`}
+                href={`/directory?folder=${encodeURIComponent(folder.folder_path)}`}
                 className="group flex items-center gap-3 border border-[var(--border)] p-4 transition-colors hover:border-[var(--text)] hover:bg-[var(--bg-secondary)]"
               >
                 <Folder size={18} className="text-[var(--text-muted)] flex-shrink-0" />

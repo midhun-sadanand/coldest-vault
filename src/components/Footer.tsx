@@ -77,6 +77,16 @@ export default function Footer() {
                   Outline
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://docs.google.com/document/d/1wotuqgR1awwkNBqhedmmPrOABRfFhI65nX8ErRvprxM/edit?usp=drive_web&ouid=110950790394093472792"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--text)] transition-colors"
+                >
+                  Guide
+                </a>
+              </li>
             </ul>
           </div>
 

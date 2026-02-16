@@ -69,20 +69,18 @@ function DirectoryContent() {
         const result = await response.json();
         setData(result);
         
-        // If there's a file param in URL, find and expand the document
+        const DELIMITER = ' > ';
         const fileParam = searchParams.get('file');
+        const folderParam = searchParams.get('folder');
+
         if (fileParam && result.folders) {
+          // If there's a file param in URL, find and expand the document
           for (const folder of result.folders) {
-            // Search by both ID and filename
-            const doc = folder.documents.find((d: DirectoryDocument) => 
+            const doc = folder.documents.find((d: DirectoryDocument) =>
               d.id === fileParam || d.file_name === fileParam
             );
             if (doc) {
-              // Set the actual document ID for expansion
               setExpandedDocId(doc.id);
-              
-              // Expand all parent folders
-              const DELIMITER = ' > ';
               const parts = folder.path.split(DELIMITER);
               const foldersToExpand = new Set<string>();
               let currentPath = '';
@@ -91,8 +89,6 @@ function DirectoryContent() {
                 foldersToExpand.add(currentPath);
               }
               setExpandedFolders(foldersToExpand);
-              
-              // Scroll to the document after a short delay
               setTimeout(() => {
                 const element = document.getElementById(`doc-${doc.id}`);
                 if (element) {
@@ -101,6 +97,25 @@ function DirectoryContent() {
               }, 300);
               break;
             }
+          }
+        } else if (folderParam && result.folders) {
+          // If there's a folder param, expand that folder and all parents, then scroll to it
+          const pathExists = result.folders.some((f: { path: string }) => f.path === folderParam);
+          if (pathExists) {
+            const parts = folderParam.split(DELIMITER);
+            const foldersToExpand = new Set<string>();
+            let currentPath = '';
+            for (const part of parts) {
+              currentPath = currentPath ? `${currentPath}${DELIMITER}${part}` : part;
+              foldersToExpand.add(currentPath);
+            }
+            setExpandedFolders(foldersToExpand);
+            setTimeout(() => {
+              const element = document.getElementById(`folder-${folderParam}`);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 300);
           }
         }
       } catch (err) {
@@ -246,7 +261,7 @@ function DirectoryContent() {
     const isExpandable = hasChildren || hasDocuments;
 
     return (
-      <div>
+      <div id={`folder-${node.path}`}>
         {/* Folder row */}
         <button
           onClick={() => isExpandable && toggleFolder(node.path)}
