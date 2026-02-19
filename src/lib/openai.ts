@@ -575,7 +575,7 @@ function trigramContainment(query: string, text: string): number {
   const qGrams = getTrigramSet(query);
   const tGrams = getTrigramSet(text);
   let overlap = 0;
-  for (const g of qGrams) if (tGrams.has(g)) overlap++;
+  Array.from(qGrams).forEach(g => { if (tGrams.has(g)) overlap++; });
   return overlap / qGrams.size;
 }
 
