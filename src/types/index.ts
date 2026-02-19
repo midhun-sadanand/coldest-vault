@@ -6,6 +6,8 @@ export interface Document {
   drive_file_id?: string;
   web_view_link?: string;
   folder_path?: string;
+  source_type?: 'primary' | 'secondary';
+  publication_date?: string;
   people: string[];
   locations: string[];
   dates: string[];
@@ -33,6 +35,7 @@ export interface SearchRequest {
   limit?: number;
   offset?: number;
   search_type?: 'fuzzy' | 'semantic' | 'spicy';
+  primaryOnly?: boolean;
 }
 
 export interface FolderSearchResult {
@@ -90,6 +93,7 @@ export interface TypeSenseDocument {
   drive_file_id: string;
   web_view_link: string;
   folder_path?: string;
+  source_type?: 'primary' | 'secondary';
   people: string[];
   locations: string[];
   dates: string[];
@@ -122,6 +126,38 @@ export interface HealthResponse {
 
 export interface CountResponse {
   count: number;
+}
+
+export interface CitationRequest {
+  file_name: string;
+  publication_date?: string;
+  source_type?: 'primary' | 'secondary';
+  folder_path?: string;
+  ocr_content: string;
+  quote?: string;
+}
+
+export interface CitationMetadata {
+  authors: string[];
+  title: string;
+  container: string | null;
+  volume: string | null;
+  issue: string | null;
+  year: string;
+  pages: string | null;
+  publisher: string | null;
+  repository: string | null;
+  collection: string | null;
+}
+
+export interface CitationResponse {
+  document_type: string;
+  metadata: CitationMetadata;
+  mla: string;
+  apa: string;
+  chicago: string;
+  page_number?: string;
+  page_context?: string;
 }
 
 // Research mode types (corpus-wide chatbot)

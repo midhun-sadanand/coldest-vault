@@ -73,7 +73,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isLoading || !password}
+            disabled={isLoading}
             className="w-full border border-[var(--border)] py-3 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (

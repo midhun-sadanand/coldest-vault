@@ -21,6 +21,8 @@ class TypeSenseClient:
             {"name": "people", "type": "string[]", "facet": True},
             {"name": "locations", "type": "string[]", "facet": True},
             {"name": "dates", "type": "string[]", "facet": True},
+            {"name": "publication_date", "type": "string", "facet": True, "optional": True},
+            {"name": "source_type", "type": "string", "facet": True, "optional": True},
             {"name": "summary", "type": "string"},
             {"name": "ocr_content", "type": "string"},
             {"name": "text_for_search", "type": "string"},
@@ -44,10 +46,15 @@ class TypeSenseClient:
         self.collection_name = settings.typesense_collection_name
     
     def create_collection(self) -> None:
-        """Create the documents collection if it doesn't exist."""
+        """Create the documents collection if it doesn't exist, and migrate new fields."""
         try:
-            self.client.collections[self.collection_name].retrieve()
+            existing = self.client.collections[self.collection_name].retrieve()
             print(f"✅ Collection '{self.collection_name}' already exists")
+            # Add any fields that are in the schema but not yet in the collection
+            existing_field_names = {f['name'] for f in existing.get('fields', [])}
+            for field in self.SCHEMA['fields']:
+                if field['name'] not in existing_field_names:
+                    self.add_field_to_schema(field)
         except typesense.exceptions.ObjectNotFound:
             schema = {
                 "name": self.collection_name,

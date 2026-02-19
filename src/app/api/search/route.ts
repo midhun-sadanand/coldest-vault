@@ -8,7 +8,8 @@ const MIN_FOLDER_MATCH_COUNT = 3;
 export async function POST(request: NextRequest) {
   try {
     const body: SearchRequest = await request.json();
-    const { query, limit = 20, offset = 0, search_type = 'spicy' } = body;
+    const { query, limit = 20, offset = 0, search_type = 'spicy', primaryOnly = false } = body;
+    const filterBy = primaryOnly ? 'source_type:=primary' : undefined;
 
     if (!query || query.trim().length === 0) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -21,20 +22,20 @@ export async function POST(request: NextRequest) {
     let allResults: SpicyResult[] = [];
 
     if (search_type === 'fuzzy') {
-      const fuzzyResults = await fuzzySearch(query, fetchLimit);
+      const fuzzyResults = await fuzzySearch(query, fetchLimit, filterBy);
       allResults = fuzzyResults.map((r, i) => ({ ...r, spicy_rank: i + 1 }));
     } else if (search_type === 'semantic') {
       const embedding = await getEmbedding(query);
-      const semanticResults = await semanticSearch(embedding, fetchLimit, query);
+      const semanticResults = await semanticSearch(embedding, fetchLimit, query, filterBy);
       allResults = semanticResults.map((r, i) => ({ ...r, spicy_rank: i + 1 }));
     } else {
       // Hybrid search: combine fuzzy + semantic, then rank by interestingness
       const [fuzzyResults, embedding] = await Promise.all([
-        fuzzySearch(query, fetchLimit),
+        fuzzySearch(query, fetchLimit, filterBy),
         getEmbedding(query)
       ]);
       
-      const semanticResults = await semanticSearch(embedding, fetchLimit, query);
+      const semanticResults = await semanticSearch(embedding, fetchLimit, query, filterBy);
       const combined = combineAndDeduplicate(fuzzyResults, semanticResults, fetchLimit);
       
       // Rank by "spiciness" using GPT

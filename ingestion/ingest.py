@@ -21,12 +21,28 @@ from typesense_client import TypeSenseClient
 # Supported file types
 SUPPORTED_MIME_TYPES = [
     'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'image/jpeg',
     'image/png',
     'image/tiff',
     'image/gif',
     'image/webp'
 ]
+
+# Files to skip by exact name (case-sensitive)
+EXCLUDED_FILE_NAMES = {
+    "MG unpublished manuscript - New Cold War.docx",
+    "Sadanand, Midhun - MG unpublished manuscript review",
+    "MG writings & early research guidance.docx",
+    "Ike, Truman Library Research Questions",
+    "Dissertation_Compiled_12.17.15.docx",
+}
+
+# folder_path label assigned to all documents ingested by this script
+FOLDER_LABEL = "MG Assorted Documents"
+
+# Folders whose documents are secondary sources (academic papers, analysis)
+SECONDARY_FOLDERS = {"MG Assorted Documents"}
 
 
 def process_file(
@@ -87,9 +103,12 @@ def process_file(
             "file_name": file.name,
             "drive_file_id": file.id,
             "web_view_link": file.web_view_link or "",
+            "folder_path": FOLDER_LABEL,
+            "source_type": "secondary" if FOLDER_LABEL in SECONDARY_FOLDERS else "primary",
             "people": entities['people'],
             "locations": entities['locations'],
             "dates": entities['dates'],
+            "publication_date": entities.get('publication_date', ''),
             "summary": entities['summary'],
             "ocr_content": ocr_text,
             "text_for_search": text_for_search,
@@ -136,6 +155,7 @@ def export_to_csv(documents: List[Dict[str, Any]], output_path: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Ingest documents from Google Drive")
+    parser.add_argument('--folder-id', type=str, help="Google Drive folder ID to ingest from (overrides GOOGLE_DRIVE_FOLDER_ID in .env)")
     parser.add_argument('--limit', type=int, help="Maximum number of files to process")
     parser.add_argument('--reprocess', action='store_true', help="Reprocess files even if already indexed")
     parser.add_argument('--dry-run', action='store_true', help="List files without processing")
@@ -183,17 +203,24 @@ def main():
         entity_extractor = EntityExtractor()
         embeddings_client = EmbeddingsClient()
     
-    # List files
+    # List files (non-recursive: the only subfolder contains already-scanned docs)
     print("\n📁 Listing files from Google Drive...")
     all_files: List[DriveFile] = list(
-        drive_client.list_files(mime_types=SUPPORTED_MIME_TYPES)
+        drive_client.list_files(
+            folder_id=args.folder_id or None,
+            mime_types=SUPPORTED_MIME_TYPES,
+            recursive=False
+        )
     )
     
     print(f"   Total files in folder: {len(all_files)}")
     
-    # Filter out already processed
+    # Filter out excluded file names and already-processed files
     files_to_process = []
     for f in all_files:
+        if f.name in EXCLUDED_FILE_NAMES:
+            print(f"   ⏭️  Skipping excluded file: {f.name}")
+            continue
         file_path = f"gdrive://{f.id}/{f.name}"
         if file_path not in existing_paths:
             files_to_process.append(f)

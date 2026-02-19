@@ -51,7 +51,7 @@ export async function GET() {
           query_by: 'file_name',
           per_page: perPage,
           page: page,
-          include_fields: 'id,file_path,file_name,drive_file_id,web_view_link,folder_path,people,dates,summary,ocr_content,locations'
+          include_fields: 'id,file_path,file_name,drive_file_id,web_view_link,folder_path,source_type,publication_date,people,dates,summary,ocr_content,locations'
         });
       
       const hits = response.hits || [];
@@ -71,6 +71,9 @@ export async function GET() {
           file_path: doc.file_path,
           drive_file_id: doc.drive_file_id,
           web_view_link: doc.web_view_link,
+          folder_path: doc.folder_path,
+          source_type: doc.source_type,
+          publication_date: doc.publication_date,
           people: doc.people || [],
           locations: doc.locations || [],
           dates: doc.dates || [],

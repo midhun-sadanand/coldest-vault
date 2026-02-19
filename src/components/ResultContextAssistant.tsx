@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ContextHistoryItem, TokenUsage } from '@/types';
+import CitationPanel from './CitationPanel';
 
 interface ResultContextAssistantProps {
   resultMetadata: {
@@ -13,6 +14,11 @@ interface ResultContextAssistantProps {
     locations: string[];
     dates: string[];
     ocr_content: string;
+    // Optional citation metadata — passed when available from search results
+    file_name?: string;
+    publication_date?: string;
+    source_type?: 'primary' | 'secondary';
+    folder_path?: string;
   };
 }
 
@@ -78,6 +84,7 @@ export default function ResultContextAssistant({ resultMetadata }: ResultContext
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
+  const [showCitation, setShowCitation] = useState(false);
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +148,10 @@ export default function ResultContextAssistant({ resultMetadata }: ResultContext
     "Summarize the key points"
   ];
 
+  // Derive file_name from file_path if not explicitly provided
+  const fileName = resultMetadata.file_name ||
+    resultMetadata.file_path.split('/').pop() || resultMetadata.file_path;
+
   return (
     <div className="border border-[var(--border)]">
       {/* Messages area */}
@@ -163,7 +174,34 @@ export default function ResultContextAssistant({ resultMetadata }: ResultContext
                   {q}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setShowCitation(prev => !prev)}
+                className={cn(
+                  "flex items-center gap-1.5 border px-3 py-1.5 text-xs transition-colors",
+                  showCitation
+                    ? "border-[var(--text)] text-[var(--text)]"
+                    : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--text)] hover:text-[var(--text)]"
+                )}
+              >
+                <Quote size={11} />
+                Cite document
+              </button>
             </div>
+            {showCitation && (
+              <div className="mt-4 w-full text-left">
+                <CitationPanel
+                  document={{
+                    file_name: fileName,
+                    publication_date: resultMetadata.publication_date,
+                    source_type: resultMetadata.source_type,
+                    folder_path: resultMetadata.folder_path,
+                    people: resultMetadata.people,
+                    ocr_content: resultMetadata.ocr_content
+                  }}
+                />
+              </div>
+            )}
           </div>
         ) : (
           messages.map((message, index) => (

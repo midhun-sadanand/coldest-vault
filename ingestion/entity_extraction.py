@@ -14,16 +14,25 @@ class EntityExtractor:
     
     EXTRACTION_PROMPT = """Analyze the following document text and extract:
 1. People: Names of individuals mentioned
-2. Locations: Places, countries, cities, addresses mentioned  
-3. Dates: Any dates or time periods mentioned
+2. Locations: Places, countries, cities, addresses mentioned
+3. Dates: Any dates or time periods mentioned in the content (not access/retrieval dates)
 4. Summary: A brief 2-3 sentence summary of the document's content
+5. Publication Date: The ORIGINAL date the content was created or published.
+   - For academic journal articles: use the journal issue date (e.g. "July 1982"), NOT any JSTOR "Accessed:" date
+   - For newspaper articles: use the article's publication date
+   - For speeches or reports: use the date the speech was delivered or the report was issued
+   - For book chapters: use the book's publication year
+   - IGNORE dates that describe when you or anyone retrieved the document (e.g. "Accessed: 16-02-2026")
+   - If only a year is clearly identifiable, use just the year (e.g. "1988")
+   - If genuinely unknown, use an empty string ""
 
 Return your response as a JSON object with these exact keys:
 {
     "people": ["name1", "name2", ...],
     "locations": ["location1", "location2", ...],
     "dates": ["date1", "date2", ...],
-    "summary": "Brief summary here"
+    "summary": "Brief summary here",
+    "publication_date": "Month YYYY or YYYY"
 }
 
 If no entities of a type are found, use an empty array [].
@@ -87,7 +96,8 @@ Document text:
                 "people": result.get("people", []),
                 "locations": result.get("locations", []),
                 "dates": result.get("dates", []),
-                "summary": result.get("summary", "")
+                "summary": result.get("summary", ""),
+                "publication_date": result.get("publication_date", "")
             }
             
         except json.JSONDecodeError as e:
@@ -103,5 +113,6 @@ Document text:
             "people": [],
             "locations": [],
             "dates": [],
-            "summary": ""
+            "summary": "",
+            "publication_date": ""
         }

@@ -6,6 +6,7 @@ import { ChevronRight, ExternalLink, Users, MapPin, Calendar } from 'lucide-reac
 import { cn, getDisplayDate } from '@/lib/utils';
 import type { SpicyResult } from '@/types';
 import ResultContextAssistant from './ResultContextAssistant';
+import CitationPanel from './CitationPanel';
 
 // Simple tooltip component
 const Tooltip = ({ children, content }: { children: React.ReactNode; content: string }) => {
@@ -36,6 +37,7 @@ interface SearchResultProps {
 export default function SearchResult({ result, query, rank }: SearchResultProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showCitation, setShowCitation] = useState(false);
   
   const { document: doc, score } = result;
   
@@ -222,17 +224,40 @@ export default function SearchResult({ result, query, rank }: SearchResultProps)
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--text-subtle)]">Source</h4>
-                {doc.web_view_link ? (
-                  <a 
-                    href={doc.web_view_link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-[var(--text)] underline underline-offset-2 hover:opacity-80"
+                <div className="flex flex-col gap-1.5">
+                  {doc.web_view_link ? (
+                    <a 
+                      href={doc.web_view_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-[var(--text)] underline underline-offset-2 hover:opacity-80"
+                    >
+                      View Original <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    <p className="text-sm text-[var(--text-subtle)]">No link available</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowCitation(!showCitation)}
+                    className="inline-flex w-fit text-sm text-[var(--text)] underline underline-offset-2 hover:opacity-80"
                   >
-                    View Original <ExternalLink size={12} />
-                  </a>
-                ) : (
-                  <p className="text-sm text-[var(--text-subtle)]">No link available</p>
+                    {showCitation ? 'Hide Citation' : 'Citation'}
+                  </button>
+                </div>
+                {showCitation && (
+                  <div className="mt-3">
+                    <CitationPanel
+                      document={{
+                        file_name: doc.file_name,
+                        publication_date: doc.publication_date,
+                        source_type: doc.source_type,
+                        folder_path: doc.folder_path,
+                        people: doc.people,
+                        ocr_content: doc.ocr_content
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -252,11 +277,15 @@ export default function SearchResult({ result, query, rank }: SearchResultProps)
                   <ResultContextAssistant 
                     resultMetadata={{
                       file_path: doc.file_path,
+                      file_name: doc.file_name,
                       summary: doc.summary,
                       people: doc.people,
                       locations: doc.locations,
                       dates: doc.dates,
-                      ocr_content: doc.ocr_content
+                      ocr_content: doc.ocr_content,
+                      publication_date: doc.publication_date,
+                      source_type: doc.source_type,
+                      folder_path: doc.folder_path
                     }}
                   />
                 </div>

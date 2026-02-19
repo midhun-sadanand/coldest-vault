@@ -14,6 +14,8 @@ interface ChronologyDocument {
   drive_file_id: string;
   web_view_link?: string;
   folder_path?: string;
+  source_type?: 'primary' | 'secondary';
+  publication_date?: string;
   people: string[];
   locations: string[];
   dates: string[];
@@ -303,11 +305,15 @@ function ChronologyContent() {
                     <ResultContextAssistant 
                       resultMetadata={{
                         file_path: doc.file_path,
+                        file_name: doc.file_name,
                         summary: doc.summary,
                         people: doc.people,
                         locations: doc.locations,
                         dates: doc.dates,
-                        ocr_content: doc.ocr_content
+                        ocr_content: doc.ocr_content,
+                        folder_path: doc.folder_path,
+                        source_type: doc.source_type,
+                        publication_date: doc.publication_date
                       }}
                     />
                   </div>

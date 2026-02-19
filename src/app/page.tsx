@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Loader2, Zap, Type, Brain, Folder, ChevronRight, MessageSquare, Send, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, Zap, Type, Brain, Folder, ChevronRight, MessageSquare, Send, ExternalLink, ArrowLeft, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SearchResult from '@/components/SearchResult';
 import type { SpicyResult, SearchResponse, FolderSearchResult, ResearchMessage, ResearchSource } from '@/types';
@@ -39,6 +39,7 @@ export default function Home() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchType, setSearchType] = useState<SearchType>('semantic');
+  const [primaryOnly, setPrimaryOnly] = useState(false);
   const [documentCount, setDocumentCount] = useState<number | null>(null);
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -80,7 +81,8 @@ export default function Home() {
           query: searchQuery.trim(),
           limit: RESULTS_PER_PAGE,
           offset,
-          search_type: type
+          search_type: type,
+          primaryOnly
         })
       });
 
@@ -363,8 +365,8 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Search type selector */}
-          <div className="mt-6 flex flex-wrap gap-4">
+          {/* Search type selector + primary-only toggle */}
+          <div className="mt-6 flex flex-wrap items-center gap-4">
             {searchTypeOptions.map((option) => {
               const Icon = option.icon;
               return (
@@ -388,9 +390,31 @@ export default function Home() {
                 </button>
               );
             })}
+
+            {/* Primary sources toggle — hidden in research mode */}
+            {searchType !== 'research' && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPrimaryOnly(prev => !prev);
+                }}
+                className="ml-auto flex items-center gap-2 text-sm text-[var(--text-muted)] transition-all cursor-pointer hover:text-[var(--text-subtle)]"
+              >
+                <BookOpen
+                  size={14}
+                  fill={primaryOnly ? "currentColor" : "none"}
+                  fillOpacity={primaryOnly ? 0.35 : 1}
+                  strokeWidth={1.75}
+                />
+                <span className={primaryOnly ? "font-bold" : ""}>Primary sources</span>
+              </button>
+            )}
           </div>
           <p className="mt-2 text-xs text-[var(--text-subtle)]">
             {searchTypeOptions.find(o => o.value === searchType)?.description}
+            {primaryOnly && searchType !== 'research' && ' · Archival documents only'}
           </p>
         </form>
       )}

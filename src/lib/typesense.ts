@@ -9,6 +9,8 @@ interface SearchCandidate {
     drive_file_id: string;
     web_view_link: string;
     folder_path: string;
+    source_type?: string;
+    publication_date?: string;
     people: string[];
     locations: string[];
     dates: string[];
@@ -117,7 +119,8 @@ const RETURN_RESULTS_ON_NO_MATCH = false;
 export async function semanticSearch(
   queryEmbedding: number[],
   limit: number = 10,
-  queryText?: string
+  queryText?: string,
+  filterBy?: string
 ): Promise<SearchResult[]> {
   const client = getTypesenseClient();
   
@@ -125,15 +128,16 @@ export async function semanticSearch(
   const fetchLimit = Math.max(100, limit * 5);
   
   // Use multi_search for vector queries to avoid URL length limits
-  const searchRequests = {
-    searches: [{
-      collection: getCollectionName(),
-      q: '*',
-      vector_query: `embedding:([${queryEmbedding.join(',')}], k:${fetchLimit})`,
-      per_page: fetchLimit,
-      include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,people,locations,dates,summary,ocr_content'
-    }]
+  const searchEntry: Record<string, unknown> = {
+    collection: getCollectionName(),
+    q: '*',
+    vector_query: `embedding:([${queryEmbedding.join(',')}], k:${fetchLimit})`,
+    per_page: fetchLimit,
+    include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,source_type,publication_date,people,locations,dates,summary,ocr_content'
   };
+  if (filterBy) searchEntry.filter_by = filterBy;
+
+  const searchRequests = { searches: [searchEntry] };
 
   const response = await client.multiSearch.perform(searchRequests, {}) as any;
   const results = response.results?.[0] as any;
@@ -160,6 +164,8 @@ export async function semanticSearch(
         drive_file_id: hit.document.drive_file_id,
         web_view_link: hit.document.web_view_link,
         folder_path: hit.document.folder_path || '',
+        source_type: hit.document.source_type,
+        publication_date: hit.document.publication_date,
         people: hit.document.people || [],
         locations: hit.document.locations || [],
         dates: hit.document.dates || [],
@@ -268,23 +274,25 @@ export async function semanticSearch(
 
 export async function fuzzySearch(
   query: string,
-  limit: number = 10
+  limit: number = 10,
+  filterBy?: string
 ): Promise<SearchResult[]> {
   const client = getTypesenseClient();
   
-  const searchParameters = {
+  const searchParameters: Record<string, unknown> = {
     q: query,
     query_by: 'text_for_search,summary,file_name,people,locations,dates',
     per_page: limit,
-    include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,people,locations,dates,summary,ocr_content',
+    include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,source_type,publication_date,people,locations,dates,summary,ocr_content',
     highlight_full_fields: 'summary,ocr_content',
     num_typos: 2
   };
+  if (filterBy) searchParameters.filter_by = filterBy;
 
   const response = await client
     .collections(getCollectionName())
     .documents()
-    .search(searchParameters);
+    .search(searchParameters as any);
 
   return (response.hits || []).map((hit: any) => ({
     document: {
@@ -293,6 +301,8 @@ export async function fuzzySearch(
       drive_file_id: hit.document.drive_file_id,
       web_view_link: hit.document.web_view_link,
       folder_path: hit.document.folder_path || '',
+      source_type: hit.document.source_type,
+      publication_date: hit.document.publication_date,
       people: hit.document.people || [],
       locations: hit.document.locations || [],
       dates: hit.document.dates || [],
@@ -347,20 +357,21 @@ export function combineAndDeduplicate(
 
 export async function researchSearch(
   queryEmbedding: number[],
-  limit: number = 10
+  limit: number = 10,
+  filterBy?: string
 ): Promise<SearchResult[]> {
   const client = getTypesenseClient();
   
-  // Use multi_search for vector queries to avoid URL length limits
-  const searchRequests = {
-    searches: [{
-      collection: getCollectionName(),
-      q: '*',
-      vector_query: `embedding:([${queryEmbedding.join(',')}], k:${limit})`,
-      per_page: limit,
-      include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,people,locations,dates,summary,ocr_content'
-    }]
+  const searchEntry: Record<string, unknown> = {
+    collection: getCollectionName(),
+    q: '*',
+    vector_query: `embedding:([${queryEmbedding.join(',')}], k:${limit})`,
+    per_page: limit,
+    include_fields: 'file_path,file_name,drive_file_id,web_view_link,folder_path,source_type,publication_date,people,locations,dates,summary,ocr_content'
   };
+  if (filterBy) searchEntry.filter_by = filterBy;
+
+  const searchRequests = { searches: [searchEntry] };
 
   const response = await client.multiSearch.perform(searchRequests, {}) as any;
   const results = response.results?.[0] as any;
@@ -378,6 +389,8 @@ export async function researchSearch(
         drive_file_id: hit.document.drive_file_id,
         web_view_link: hit.document.web_view_link,
         folder_path: hit.document.folder_path || '',
+        source_type: hit.document.source_type,
+        publication_date: hit.document.publication_date,
         people: hit.document.people || [],
         locations: hit.document.locations || [],
         dates: hit.document.dates || [],
