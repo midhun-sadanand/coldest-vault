@@ -248,8 +248,9 @@ function toTitleCase(str: string): string {
     .split(/(\s+)/)
     .map((word, i) => {
       if (/^\s+$/.test(word)) return word;
-      // Preserve words that are already all-caps (acronyms: NSC, AEC, CIA, USSR, UN, US, ROK, etc.)
-      if (word === word.toUpperCase() && /^[A-Z]{2,}$/.test(word)) return word;
+      // Preserve short all-caps words as acronyms (NSC, AEC, CIA, USSR, UN, US, ROK, etc.)
+      // Long all-caps words are filename convention for the title — convert to title case normally.
+      if (word === word.toUpperCase() && /^[A-Z]{2,5}$/.test(word)) return word;
       const lower = word.toLowerCase();
       if (i !== 0 && SMALL_WORDS.has(lower)) return lower;
       return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -559,80 +560,57 @@ function parseOcrPages(ocrContent: string): Array<{ pageNum: number; text: strin
   return pages;
 }
 
-const PAGE_NUMBER_PROMPT = `You are reading a page from a scanned document. Running headers and footers often contain the actual published page number.
+// Build the set of all character trigrams for a string
+function getTrigramSet(s: string): Set<string> {
+  const result = new Set<string>();
+  for (let i = 0; i <= s.length - 3; i++) result.add(s.slice(i, i + 3));
+  return result;
+}
 
-Look at the first 3 lines and last 3 lines of this page text for a standalone number that is the printed page number.
-Ignore: dates, footnote numbers, section numbers, years like "1953", "1982", phone numbers, or page numbers embedded in sentences.
-A page number is typically a short standalone integer (e.g. "512", "47") appearing at the top or bottom of the page.
-
-Return ONLY a JSON object: {"printed_page": "512"} or {"printed_page": null} if none found.`;
+// What fraction of the query's trigrams appear in the target text?
+// Values near 1.0 = strong match; tolerates OCR typos because most trigrams
+// still survive a single-character substitution error.
+function trigramContainment(query: string, text: string): number {
+  if (query.length < 3) return text.includes(query) ? 1 : 0;
+  const qGrams = getTrigramSet(query);
+  const tGrams = getTrigramSet(text);
+  let overlap = 0;
+  for (const g of qGrams) if (tGrams.has(g)) overlap++;
+  return overlap / qGrams.size;
+}
 
 export async function findQuotePage(
   ocrContent: string,
   quote: string
-): Promise<{ page_number: string | null; page_context: string }> {
+): Promise<{ page_number: string | null; page_confirmed: boolean }> {
   const pages = parseOcrPages(ocrContent);
 
   if (pages.length === 0) {
-    return { page_number: null, page_context: 'No page markers found in this document.' };
+    return { page_number: null, page_confirmed: false };
   }
 
-  // Normalize quote for matching
-  const normalizedQuote = quote.toLowerCase().replace(/\s+/g, ' ').trim();
-  const shortQuote = normalizedQuote.slice(0, 50);
+  // Normalize quote — cap at 120 chars to keep trigram set manageable
+  const normalizedQuote = quote.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 120);
 
-  // Find page containing the quote
+  // Score every page by trigram containment and pick the best match
+  let bestScore = 0;
   let matchedPage: { pageNum: number; text: string } | null = null;
-  let matchContext = '';
 
   for (const page of pages) {
     const normalizedText = page.text.toLowerCase().replace(/\s+/g, ' ');
-    if (normalizedText.includes(normalizedQuote) || (shortQuote.length >= 20 && normalizedText.includes(shortQuote))) {
+    const score = trigramContainment(normalizedQuote, normalizedText);
+    if (score > bestScore) {
+      bestScore = score;
       matchedPage = page;
-      // Extract surrounding context (~200 chars around the match)
-      const idx = normalizedText.indexOf(shortQuote);
-      if (idx !== -1) {
-        const start = Math.max(0, idx - 80);
-        const end = Math.min(page.text.length, idx + shortQuote.length + 80);
-        matchContext = '...' + page.text.slice(start, end).trim() + '...';
-      }
-      break;
     }
   }
 
-  if (!matchedPage) {
-    return {
-      page_number: null,
-      page_context: 'Quote not found in document. Try a shorter or slightly different excerpt.'
-    };
+  // Require at least 70% of query trigrams to appear on the matched page
+  if (!matchedPage || bestScore < 0.70) {
+    return { page_number: null, page_confirmed: false };
   }
 
-  // Ask GPT to identify the printed page number from the page's header/footer lines
-  const pageLines = matchedPage.text.split('\n').filter(l => l.trim());
-  const headerLines = pageLines.slice(0, 3).join('\n');
-  const footerLines = pageLines.slice(-3).join('\n');
-  const edgeText = `FIRST 3 LINES:\n${headerLines}\n\nLAST 3 LINES:\n${footerLines}`;
-
-  const client = getOpenAIClient();
-  const pageResponse = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: PAGE_NUMBER_PROMPT },
-      { role: 'user', content: edgeText }
-    ],
-    temperature: 0,
-    max_tokens: 50,
-    response_format: { type: 'json_object' }
-  });
-
-  const pageRaw = pageResponse.choices[0].message.content || '{}';
-  const pageParsed = JSON.parse(pageRaw);
-  const printedPage: string | null = pageParsed.printed_page || null;
-
-  return {
-    page_number: printedPage ? `p. ${printedPage}` : `OCR page ${matchedPage.pageNum} (printed page number not detected)`,
-    page_context: matchContext || matchedPage.text.slice(0, 200).trim() + '...'
-  };
+  return { page_number: `p. ${matchedPage.pageNum}`, page_confirmed: false };
 }
 
 // Research mode - corpus-wide Q&A with citations

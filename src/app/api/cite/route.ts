@@ -5,7 +5,7 @@ import type { CitationRequest } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const body: CitationRequest = await request.json();
-    const { file_name, publication_date, source_type, folder_path, ocr_content, quote } = body;
+    const { file_name, publication_date, source_type, folder_path, ocr_content, quote, page_number } = body;
 
     if (!file_name || !ocr_content) {
       return NextResponse.json(
@@ -24,13 +24,21 @@ export async function POST(request: NextRequest) {
       ocr_content
     });
 
-    // If a quote is provided, find its page number
+    // Direct page number entry — no OCR search needed, always confirmed
+    if (page_number && page_number.trim().length > 0) {
+      const raw = page_number.trim();
+      const formatted = /^\d+$/.test(raw) ? `p. ${raw}` : raw;
+      return NextResponse.json({ ...citation, page_number: formatted, page_confirmed: true, page_context: '' });
+    }
+
+    // Quote-based fuzzy page lookup
     if (quote && quote.trim().length > 0) {
       const pageResult = await findQuotePage(ocr_content, quote.trim());
       return NextResponse.json({
         ...citation,
         page_number: pageResult.page_number,
-        page_context: pageResult.page_context
+        page_confirmed: pageResult.page_confirmed,
+        page_context: ''
       });
     }
 

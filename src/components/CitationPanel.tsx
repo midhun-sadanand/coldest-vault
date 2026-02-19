@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Check, Loader2, Search } from 'lucide-react';
+import { Copy, Check, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CitationResponse } from '@/types';
 
@@ -44,15 +44,11 @@ function CopyButton({ text }: { text: string }) {
 export default function CitationPanel({ document: doc }: CitationPanelProps) {
   const [activeFormat, setActiveFormat] = useState<CitationFormat>('chicago');
   const [citation, setCitation] = useState<CitationResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
 
-  // Quote-to-page state
-  const [quote, setQuote] = useState('');
-  const [isPageLoading, setIsPageLoading] = useState(false);
-  const [pageResult, setPageResult] = useState<{ page_number: string | null; page_context: string } | null>(null);
-  const [pageError, setPageError] = useState<string | null>(null);
+  const [pageInput, setPageInput] = useState('');
+  const [pageResult, setPageResult] = useState<string | null>(null);
 
   // Fetch base citation once on mount
   useEffect(() => {
@@ -84,7 +80,6 @@ export default function CitationPanel({ document: doc }: CitationPanelProps) {
         setError(err instanceof Error ? err.message : 'Citation generation failed');
       } finally {
         setIsLoading(false);
-        setHasFetched(true);
       }
     };
 
@@ -92,40 +87,15 @@ export default function CitationPanel({ document: doc }: CitationPanelProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleFindPage = async (e: React.FormEvent) => {
+  const handleCitePage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quote.trim() || isPageLoading) return;
-    setIsPageLoading(true);
-    setPageError(null);
-    setPageResult(null);
-
-    try {
-      const response = await fetch('/api/cite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file_name: doc.file_name,
-          publication_date: doc.publication_date,
-          source_type: doc.source_type,
-          folder_path: doc.folder_path,
-          people: doc.people,
-          ocr_content: doc.ocr_content,
-          quote: quote.trim()
-        })
-      });
-
-      if (!response.ok) throw new Error('Page lookup failed');
-
-      const data = await response.json();
-      setPageResult({
-        page_number: data.page_number,
-        page_context: data.page_context
-      });
-    } catch (err: unknown) {
-      setPageError(err instanceof Error ? err.message : 'Page lookup failed');
-    } finally {
-      setIsPageLoading(false);
-    }
+    const raw = pageInput.trim();
+    if (!raw) return;
+    // Format: bare numbers get "p." prefix, ranges get "pp." prefix, otherwise use as-is
+    const isRange = /^\d+\s*[-–]\s*\d+$/.test(raw);
+    const isNumber = /^\d+$/.test(raw);
+    const formatted = isRange ? `pp. ${raw.replace(/\s*[-–]\s*/, '–')}` : isNumber ? `p. ${raw}` : raw;
+    setPageResult(formatted);
   };
 
   const formats: { key: CitationFormat; label: string }[] = [
@@ -180,55 +150,39 @@ export default function CitationPanel({ document: doc }: CitationPanelProps) {
         )}
       </div>
 
-      {/* Find page for a quote */}
+      {/* Cite page(s) */}
       <div className="border-t border-[var(--border)] px-4 py-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-subtle)] mb-3">
-          Find page for a quote
+          Cite page(s)
         </p>
-        <form onSubmit={handleFindPage} className="flex gap-2">
+        <form onSubmit={handleCitePage} className="flex items-center gap-2">
           <input
             type="text"
-            value={quote}
-            onChange={(e) => setQuote(e.target.value)}
-            placeholder="Paste a quote to find its page number..."
-            className="flex-1 border-0 border-b border-[var(--input-border)] bg-transparent py-1.5 text-xs text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:border-[var(--text)] focus:outline-none"
-            disabled={isPageLoading}
+            value={pageInput}
+            onChange={(e) => { setPageInput(e.target.value); setPageResult(null); }}
+            placeholder="e.g. 1  or  4–6"
+            className="flex-1 min-w-0 border-0 border-b border-[var(--input-border)] bg-transparent py-1.5 text-xs text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:border-[var(--text)] focus:outline-none"
           />
           <button
             type="submit"
-            disabled={isPageLoading || !quote.trim()}
+            disabled={!pageInput.trim()}
             className={cn(
               'flex items-center justify-center px-3 py-1.5 text-xs border border-[var(--border)] transition-colors flex-shrink-0',
-              isPageLoading || !quote.trim()
+              !pageInput.trim()
                 ? 'cursor-not-allowed text-[var(--text-subtle)]'
                 : 'text-[var(--text)] hover:bg-[var(--bg-secondary)]'
             )}
           >
-            {isPageLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+            <Search size={13} />
           </button>
         </form>
 
-        {pageError && (
-          <p className="mt-2 text-xs text-red-500">{pageError}</p>
-        )}
-
-        {pageResult && (
-          <div className="mt-3 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-[var(--text)]">
-                {pageResult.page_number || 'Page not identified'}
-              </span>
-              {pageResult.page_number && citation && (
-                <CopyButton
-                  text={`${citation[activeFormat]}${pageResult.page_number ? `, ${pageResult.page_number}` : ''}`}
-                />
-              )}
-            </div>
-            {pageResult.page_context && (
-              <p className="text-xs text-[var(--text-subtle)] leading-relaxed italic">
-                {pageResult.page_context}
-              </p>
-            )}
+        {pageResult && citation && (
+          <div className="mt-3 flex items-start gap-2">
+            <p className="text-xs leading-relaxed text-[var(--text-muted)] flex-1 font-mono">
+              {`${citation[activeFormat].replace(/\.$/, '')}, ${pageResult}.`}
+            </p>
+            <CopyButton text={`${citation[activeFormat].replace(/\.$/, '')}, ${pageResult}.`} />
           </div>
         )}
       </div>

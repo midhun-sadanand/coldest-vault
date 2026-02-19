@@ -135,6 +135,7 @@ export interface CitationRequest {
   folder_path?: string;
   ocr_content: string;
   quote?: string;
+  page_number?: string;
 }
 
 export interface CitationMetadata {
@@ -157,6 +158,7 @@ export interface CitationResponse {
   apa: string;
   chicago: string;
   page_number?: string;
+  page_confirmed?: boolean;
   page_context?: string;
 }
 
