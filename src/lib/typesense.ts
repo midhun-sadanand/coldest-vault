@@ -164,7 +164,7 @@ export async function semanticSearch(
         drive_file_id: hit.document.drive_file_id,
         web_view_link: hit.document.web_view_link,
         folder_path: hit.document.folder_path || '',
-        source_type: hit.document.source_type,
+        source_type: hit.document.source_type as 'primary' | 'secondary' | undefined,
         publication_date: hit.document.publication_date,
         people: hit.document.people || [],
         locations: hit.document.locations || [],
@@ -266,7 +266,10 @@ export async function semanticSearch(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(r => ({
-      document: r.document,
+      document: {
+        ...r.document,
+        source_type: r.document.source_type as 'primary' | 'secondary' | undefined
+      },
       score: r.score,
       highlights: r.highlights
     }));
@@ -389,7 +392,7 @@ export async function researchSearch(
         drive_file_id: hit.document.drive_file_id,
         web_view_link: hit.document.web_view_link,
         folder_path: hit.document.folder_path || '',
-        source_type: hit.document.source_type,
+        source_type: hit.document.source_type as 'primary' | 'secondary' | undefined,
         publication_date: hit.document.publication_date,
         people: hit.document.people || [],
         locations: hit.document.locations || [],
