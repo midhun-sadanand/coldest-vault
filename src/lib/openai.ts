@@ -243,14 +243,22 @@ const SMALL_WORDS = new Set([
   'to', 'by', 'of', 'in', 'is', 'with', 'from', 'into', 'than', 'as', 'via'
 ]);
 
+// Known abbreviations that should stay all-caps even when short.
+// Common English words (THE, AND, BY, etc.) are intentionally excluded so they
+// get title-cased rather than being mistaken for acronyms.
+const KNOWN_ACRONYMS = new Set([
+  'NSC', 'AEC', 'CIA', 'FBI', 'NSA', 'DOD', 'DOE', 'DOJ', 'DOT', 'HEW',
+  'USSR', 'NATO', 'SEATO', 'ANZUS', 'UN', 'US', 'UK', 'ROK', 'ROC', 'PRC',
+  'POW', 'MIA', 'AWOL', 'JCS', 'JFD', 'DDE', 'IRS', 'SEC', 'FTC',
+]);
+
 function toTitleCase(str: string): string {
   return str
     .split(/(\s+)/)
     .map((word, i) => {
       if (/^\s+$/.test(word)) return word;
-      // Preserve short all-caps words as acronyms (NSC, AEC, CIA, USSR, UN, US, ROK, etc.)
-      // Long all-caps words are filename convention for the title — convert to title case normally.
-      if (word === word.toUpperCase() && /^[A-Z]{2,5}$/.test(word)) return word;
+      // Preserve only explicitly known acronyms, not arbitrary short all-caps words.
+      if (word === word.toUpperCase() && KNOWN_ACRONYMS.has(word)) return word;
       const lower = word.toLowerCase();
       if (i !== 0 && SMALL_WORDS.has(lower)) return lower;
       return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -416,7 +424,7 @@ COMMON ERRORS TO FIX:
    the filename encodes collection + box + folder — it is NOT the document title.
    In this case, infer the title from the document content preview or use [Untitled Document].
 
-2. CAPITALIZATION: Fix initials like "C.d." → "C.D.", preserve acronyms (NSC, AEC, CIA, USSR, UK, US, ROK, POW, NATO).
+2. CAPITALIZATION: Document titles MUST be in Title Case (e.g. "The United States and the Korean Problem"), NEVER all-caps (e.g. NEVER "THE UNITED STATES AND THE KOREAN PROBLEM"). Fix initials like "C.d." → "C.D.", preserve acronyms (NSC, AEC, CIA, USSR, UK, US, ROK, POW, NATO).
 
 3. MISSING PARENT COLLECTION: Use your knowledge of Eisenhower Library record groups to
    add the correct parent collection if missing (e.g. "DDE Diary Series" belongs to
